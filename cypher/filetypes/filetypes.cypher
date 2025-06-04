@@ -1,0 +1,152 @@
+// Create nodes for each file type with their properties using MERGE
+MERGE (:FileType {
+  name: "LIS-79",
+  extension: "LIS, TAP, NTI, TIF",
+  description: "LIS data (usually wireline data) is converted to an ASCII format called LAS before loading into GEO. There are different kinds of LIS, which are supported by the LIS-LAS Converter routine",
+  load: "No",
+  export: "No"
+});
+
+MERGE (:FileType {
+  name: "Canadian Well Log ASCII (CWLAS)",
+  extension: "LASData_load",
+  description: "This is a special ASCII implementation of wireline data that allows for specific categories of information to coexist with data. GEO can load LAS data directly.",
+  load: "Yes",
+  export: "Yes"
+});
+
+MERGE (:FileType {
+  name: "Text (ASCII)",
+  extension: "ASC, TXTData_load",
+  description: "Mudlog, MWD and well test data are usually in the Text File format. Sometimes, the data is presented in columns which are delimited by SPACES. Such Text files MUST be prepared (externally or within GEO before they can be loaded to the ODF database.",
+  load: "Yes",
+  export: "Yes"
+});
+
+MERGE (:FileType {
+  name: "Comma Separated Values (ASCII)",
+  extension: "CSVData_load",
+  description: "Some service companies present mudlog data as comma separated values. Spreadsheets such as Excel and Lotus 123 can also create output in comma separated values format. This data can be directly read by GEO.",
+  load: "Yes",
+  export: "Yes"
+});
+
+MERGE (:FileType {
+  name: "Tab Delimited (ASCII)",
+  extension: "TXTData_load",
+  description: "One form of ASCII formats. Tab delimited files are also created when data is saved as a 'Text file' in spreadsheet applications. This kind of data can be directly read by GEO.",
+  load: "Yes",
+  export: "Yes"
+});
+
+MERGE (:FileType {
+  name: "Metafile",
+  extension: "CGMExport_CGM",
+  description: "The ISO-8632 implementation of Computer Graphics Metafile. This popular format can be used to plot to plotters such as Versatec or HP Design Jets. It is limited by the size of the plot.",
+  load: "No",
+  export: "Yes"
+});
+
+MERGE (:FileType {
+  name: "Windows Metafile",
+  extension: "WMFExport_WMF",
+  description: "Both placeable and standard Windows Metafiles are supported. This is an easy way of getting graphical information to (and from) other applications such as Word and Excel.",
+  load: "No",
+  export: "Yes"
+});
+
+MERGE (:FileType {
+  name: "Enhanced Metafile",
+  extension: "EMFExport_EMF",
+  description: "Enhanced Metafiles are supported. This is another way of getting graphical information to (and from) other applications such as Word and Excel.",
+  load: "Yes",
+  export: "Yes"
+});
+
+MERGE (:FileType {
+  name: "Scalable Vector Graphics",
+  extension: "SVGExport_SVG",
+  description: "SVG is a language for describing two-dimensional graphics in XML (XML-10). SVG allows for three types of graphic objects: vector graphic shapes (e.g., paths consisting of straight lines and curves), images and text.",
+  load: "",
+  export: "Yes"
+});
+
+MERGE (:FileType {
+  name: "Extensible Mark-up Language",
+  extension: "XMLExport_XML",
+  description: "The Extensible Markup Language (XML) is the universal format for structured documents and data on the Web. Geologix, as a full member of the Petrotechnical Open Software Corporation [POSC] has been instrumental in defining the WellPlotML and WellLogML definitions.",
+  load: "No",
+  export: "No"
+});
+
+MERGE (:FileType {
+  name: "VIEW",
+  extension: "VEW",
+  description: "The View file contains the layout-related settings needed to create a log. These settings are normally entered by the user and may be stored for ease of recall when the same layout is required for subsequent well logs i.e. the standard composite log presentation.",
+  load: "Yes",
+  export: "Yes"
+});
+
+MERGE (:FileType {
+  name: "Output Database File",
+  extension: "ODF",
+  description: "The Output Database File is a database where the wireline, mudlog or any other imported data, together with the layout-related View information and the Interpretation-related data is stored. The ODF enables the rapid recall of all data relating to a particular well, either for further editing/update or for the production of further logs.",
+  load: "No",
+  export: "No"
+});
+
+MERGE (:FileType {
+  name: "ODF Database Template",
+  extension: "ODT",
+  description: "File that is created from an ODF with all required components, such as headers, tables, & lithology and then saved as a template in GEO.",
+  load: "No",
+  export: "No"
+});
+
+MERGE (:FileType {
+  name: "ODF Interval File",
+  extension: "OIF",
+  description: "These files are concerned with only a specific user defined depth interval from an ODF file.",
+  load: "Yes",
+  export: "Yes"
+});
+
+MERGE (:FileType {
+  name: "ODF Update File",
+  extension: "OUFFiles_OUFConcept",
+  description: "Small and sequential update files, which only contain updated information since the last file save. Ordinarily sent as daily updates from the well site to the operation offices.",
+  load: "Yes",
+  export: "Yes"
+});
+
+MERGE (:FileType {
+  name: "GEODraft Output Database File",
+  extension: "GDF",
+  description: "This is a file format equivalent to the ODF, but created by the GEODraft application. These files may be opened by applications of the GEO Software Suite, to allow full data sharing with users of the GEODraft application.",
+  load: "No",
+  export: "Yes"
+});
+
+MERGE (:FileType {
+  name: "GEODraft View File",
+  extension: "GDV",
+  description: "This is a file format equivalent to the VEW, but created by the GEODraft application. These files may be opened by applications of the GEO Software Suite, to allow full data sharing with users of the GEODraft application.",
+  load: "Yes",
+  export: "Yes"
+});
+
+MERGE (:FileType {
+  name: "GEOGraph Database file",
+  extension: "GGD",
+  description: "This is the file type created by the GEOGraph application. This file can be opened and edited using GEOGraph but the files can be added to ODF or ODT files for display purposes.",
+  load: "Yes",
+  export: "Yes"
+});
+
+MERGE (:FileType {
+  name: "GEOGraph Template file",
+  extension: "GGT",
+  description: "This is the template version of the GGD file. This file can be opened and edited using GEOGraph and be used like an GGD, but saves no data or data related features.",
+  load: "Yes",
+  export: "No"
+});
