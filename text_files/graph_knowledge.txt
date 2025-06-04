@@ -1,0 +1,95 @@
+Node (System) with properties: name: GEO File System
+Node (FileType) with properties: name: ODF, fullName: Output Database File
+Node (FileType) with properties: name: ODT, fullName: Template File
+Node (FileType) with properties: name: OIF, fullName: Interval File
+Node (Component) with properties: details: headers, lithology, modifiers, symbols, name: Library Info
+Node (Component) with properties: details: track layout, depth, scale, name: View File Content
+Node (Component) with properties: details: curve defaults, computed curves, name: INI Settings
+Node (Component) with properties: details: structure with warnings, name: Document Tree
+Node (Concept) with properties: description: e.g. 7000-8000ft segment of full ODF, name: Depth Interval Subset
+Node (Curve) with properties: source: Create_Cutoff_Curve.htm, mnemonic: GR_SH_CUT, name: Shale Zone Cutoff, type: Cutoff, units: API
+Node (Curve) with properties: source: Create_Multiple_Curve_Data.htm, mnemonic: C1, name: C1, type: User-defined, units: ppm
+Node (Curve) with properties: source: Create_Multiple_Curve_Data.htm, mnemonic: C2, name: C2, type: User-defined, units: ppm
+Node (Curve) with properties: source: Create_Curve_Data_from_Table_Columns.htm, mnemonic: GR_TAB, name: Gamma Ray Table Curve, type: Table, units: API
+Node (Curve) with properties: source: Create_Polyline_Curve.htm, mnemonic: PL_MAN, name: Manual Polyline, type: Polyline, units: 
+Node (Operation) with properties: name: Create User-defined Curve
+Node (Operation) with properties: name: Create Cutoff Curve
+Node (Operation) with properties: name: Create Curve From Table Columns
+Node (Operation) with properties: name: Create Polyline Curve
+Node (Operation) with properties: name: Create Multiple Curve Data
+Node (Operation) with properties: name: Edit Curve Data
+Node (Operation) with properties: name: Mouse Set Curve Data
+Node (Operation) with properties: name: Compile Curves
+Node (Operation) with properties: name: View and Edit Curve Groups
+Node (Operation) with properties: name: Generate Integrated Travel Time Pips
+Node (Group) with properties: name: Gas Components
+Node (Curve) with properties: source: Create_Cutoff_Curve.htm, mnemonic: GR_SH_CUT, name: Shale Zone Cutoff, type: Cutoff, units: API
+Node (Curve) with properties: source: Create_Multiple_Curve_Data.htm, mnemonic: C1, name: C1, type: User-defined, units: ppm
+Node (Curve) with properties: source: Create_Multiple_Curve_Data.htm, mnemonic: C2, name: C2, type: User-defined, units: ppm
+Node (Curve) with properties: source: Create_Curve_Data_from_Table_Columns.htm, mnemonic: GR_TAB, name: Gamma Ray Table Curve, type: Table, units: API
+Node (Curve) with properties: source: Create_Polyline_Curve.htm, mnemonic: PL_MAN, name: Manual Polyline, type: Polyline, units: 
+Node (Operation) with properties: name: Create User-defined Curve
+Node (Operation) with properties: name: Create Cutoff Curve
+Node (Operation) with properties: name: Create Curve From Table Columns
+Node (Operation) with properties: name: Create Polyline Curve
+Node (Operation) with properties: name: Create Multiple Curve Data
+Node (Operation) with properties: name: Edit Curve Data
+Node (Operation) with properties: name: Mouse Set Curve Data
+Node (Operation) with properties: name: Compile Curves
+Node (Operation) with properties: name: View and Edit Curve Groups
+Node (Operation) with properties: name: Generate Integrated Travel Time Pips
+Node (Group) with properties: name: Gas Components
+Relationship (HAS_TEMPLATE) from (FileType - name: ODF, fullName: Output Database File) to (FileType - name: ODT, fullName: Template File) with properties: 
+Relationship (CAN_BE_SEGMENTED_INTO) from (FileType - name: ODF, fullName: Output Database File) to (FileType - name: OIF, fullName: Interval File) with properties: 
+Relationship (CREATED_FROM) from (FileType - name: ODT, fullName: Template File) to (FileType - name: ODF, fullName: Output Database File) with properties: 
+Relationship (CONTAINS) from (FileType - name: ODT, fullName: Template File) to (Component - details: headers, lithology, modifiers, symbols, name: Library Info) with properties: 
+Relationship (CONTAINS) from (FileType - name: ODT, fullName: Template File) to (Component - details: track layout, depth, scale, name: View File Content) with properties: 
+Relationship (CONTAINS) from (FileType - name: ODT, fullName: Template File) to (Component - details: curve defaults, computed curves, name: INI Settings) with properties: 
+Relationship (HAS_DOCUMENT_TREE) from (FileType - name: ODT, fullName: Template File) to (Component - details: structure with warnings, name: Document Tree) with properties: 
+Relationship (EXTRACTED_FROM) from (FileType - name: OIF, fullName: Interval File) to (FileType - name: ODF, fullName: Output Database File) with properties: 
+Relationship (REPRESENTS) from (FileType - name: OIF, fullName: Interval File) to (Concept - description: e.g. 7000-8000ft segment of full ODF, name: Depth Interval Subset) with properties: 
+Relationship (CREATED_BY) from (Curve - source: Create_Cutoff_Curve.htm, mnemonic: GR_SH_CUT, name: Shale Zone Cutoff, type: Cutoff, units: API) to (Operation - name: Create Cutoff Curve) with properties: 
+Relationship (CREATED_BY) from (Curve - source: Create_Cutoff_Curve.htm, mnemonic: GR_SH_CUT, name: Shale Zone Cutoff, type: Cutoff, units: API) to (Operation - name: Create Cutoff Curve) with properties: 
+Relationship (CREATED_BY) from (Curve - source: Create_Cutoff_Curve.htm, mnemonic: GR_SH_CUT, name: Shale Zone Cutoff, type: Cutoff, units: API) to (Operation - name: Create Cutoff Curve) with properties: 
+Relationship (CREATED_BY) from (Curve - source: Create_Multiple_Curve_Data.htm, mnemonic: C1, name: C1, type: User-defined, units: ppm) to (Operation - name: Create Multiple Curve Data) with properties: 
+Relationship (CREATED_BY) from (Curve - source: Create_Multiple_Curve_Data.htm, mnemonic: C1, name: C1, type: User-defined, units: ppm) to (Operation - name: Create Multiple Curve Data) with properties: 
+Relationship (CREATED_BY) from (Curve - source: Create_Multiple_Curve_Data.htm, mnemonic: C1, name: C1, type: User-defined, units: ppm) to (Operation - name: Create Multiple Curve Data) with properties: 
+Relationship (CREATED_BY) from (Curve - source: Create_Multiple_Curve_Data.htm, mnemonic: C2, name: C2, type: User-defined, units: ppm) to (Operation - name: Create Multiple Curve Data) with properties: 
+Relationship (CREATED_BY) from (Curve - source: Create_Multiple_Curve_Data.htm, mnemonic: C2, name: C2, type: User-defined, units: ppm) to (Operation - name: Create Multiple Curve Data) with properties: 
+Relationship (CREATED_BY) from (Curve - source: Create_Multiple_Curve_Data.htm, mnemonic: C2, name: C2, type: User-defined, units: ppm) to (Operation - name: Create Multiple Curve Data) with properties: 
+Relationship (CREATED_BY) from (Curve - source: Create_Curve_Data_from_Table_Columns.htm, mnemonic: GR_TAB, name: Gamma Ray Table Curve, type: Table, units: API) to (Operation - name: Create Curve From Table Columns) with properties: 
+Relationship (CREATED_BY) from (Curve - source: Create_Curve_Data_from_Table_Columns.htm, mnemonic: GR_TAB, name: Gamma Ray Table Curve, type: Table, units: API) to (Operation - name: Create Curve From Table Columns) with properties: 
+Relationship (CREATED_BY) from (Curve - source: Create_Curve_Data_from_Table_Columns.htm, mnemonic: GR_TAB, name: Gamma Ray Table Curve, type: Table, units: API) to (Operation - name: Create Curve From Table Columns) with properties: 
+Relationship (CREATED_BY) from (Curve - source: Create_Polyline_Curve.htm, mnemonic: PL_MAN, name: Manual Polyline, type: Polyline, units: ) to (Operation - name: Create Polyline Curve) with properties: 
+Relationship (CREATED_BY) from (Curve - source: Create_Polyline_Curve.htm, mnemonic: PL_MAN, name: Manual Polyline, type: Polyline, units: ) to (Operation - name: Create Polyline Curve) with properties: 
+Relationship (CREATED_BY) from (Curve - source: Create_Polyline_Curve.htm, mnemonic: PL_MAN, name: Manual Polyline, type: Polyline, units: ) to (Operation - name: Create Polyline Curve) with properties: 
+Relationship (CONTAINS) from (Group - name: Gas Components) to (Curve - source: Create_Multiple_Curve_Data.htm, mnemonic: C1, name: C1, type: User-defined, units: ppm) with properties: 
+Relationship (CONTAINS) from (Group - name: Gas Components) to (Curve - source: Create_Multiple_Curve_Data.htm, mnemonic: C1, name: C1, type: User-defined, units: ppm) with properties: 
+Relationship (CONTAINS) from (Group - name: Gas Components) to (Curve - source: Create_Multiple_Curve_Data.htm, mnemonic: C2, name: C2, type: User-defined, units: ppm) with properties: 
+Relationship (CONTAINS) from (Group - name: Gas Components) to (Curve - source: Create_Multiple_Curve_Data.htm, mnemonic: C2, name: C2, type: User-defined, units: ppm) with properties: 
+Relationship (CONTAINS) from (Group - name: Gas Components) to (Curve - source: Create_Multiple_Curve_Data.htm, mnemonic: C1, name: C1, type: User-defined, units: ppm) with properties: 
+Relationship (CONTAINS) from (Group - name: Gas Components) to (Curve - source: Create_Multiple_Curve_Data.htm, mnemonic: C2, name: C2, type: User-defined, units: ppm) with properties: 
+Relationship (CREATED_BY) from (Group - name: Gas Components) to (Operation - name: Create Multiple Curve Data) with properties: 
+Relationship (CREATED_BY) from (Group - name: Gas Components) to (Operation - name: Create Multiple Curve Data) with properties: 
+Relationship (CREATED_BY) from (Group - name: Gas Components) to (Operation - name: Create Multiple Curve Data) with properties: 
+Relationship (VIEWED_BY) from (Group - name: Gas Components) to (Operation - name: View and Edit Curve Groups) with properties: 
+Relationship (VIEWED_BY) from (Group - name: Gas Components) to (Operation - name: View and Edit Curve Groups) with properties: 
+Relationship (VIEWED_BY) from (Group - name: Gas Components) to (Operation - name: View and Edit Curve Groups) with properties: 
+Relationship (CREATED_BY) from (Curve - source: Create_Cutoff_Curve.htm, mnemonic: GR_SH_CUT, name: Shale Zone Cutoff, type: Cutoff, units: API) to (Operation - name: Create Cutoff Curve) with properties: 
+Relationship (CREATED_BY) from (Curve - source: Create_Cutoff_Curve.htm, mnemonic: GR_SH_CUT, name: Shale Zone Cutoff, type: Cutoff, units: API) to (Operation - name: Create Cutoff Curve) with properties: 
+Relationship (CREATED_BY) from (Curve - source: Create_Multiple_Curve_Data.htm, mnemonic: C1, name: C1, type: User-defined, units: ppm) to (Operation - name: Create Multiple Curve Data) with properties: 
+Relationship (CREATED_BY) from (Curve - source: Create_Multiple_Curve_Data.htm, mnemonic: C1, name: C1, type: User-defined, units: ppm) to (Operation - name: Create Multiple Curve Data) with properties: 
+Relationship (CREATED_BY) from (Curve - source: Create_Multiple_Curve_Data.htm, mnemonic: C2, name: C2, type: User-defined, units: ppm) to (Operation - name: Create Multiple Curve Data) with properties: 
+Relationship (CREATED_BY) from (Curve - source: Create_Multiple_Curve_Data.htm, mnemonic: C2, name: C2, type: User-defined, units: ppm) to (Operation - name: Create Multiple Curve Data) with properties: 
+Relationship (CREATED_BY) from (Curve - source: Create_Curve_Data_from_Table_Columns.htm, mnemonic: GR_TAB, name: Gamma Ray Table Curve, type: Table, units: API) to (Operation - name: Create Curve From Table Columns) with properties: 
+Relationship (CREATED_BY) from (Curve - source: Create_Curve_Data_from_Table_Columns.htm, mnemonic: GR_TAB, name: Gamma Ray Table Curve, type: Table, units: API) to (Operation - name: Create Curve From Table Columns) with properties: 
+Relationship (CREATED_BY) from (Curve - source: Create_Polyline_Curve.htm, mnemonic: PL_MAN, name: Manual Polyline, type: Polyline, units: ) to (Operation - name: Create Polyline Curve) with properties: 
+Relationship (CREATED_BY) from (Curve - source: Create_Polyline_Curve.htm, mnemonic: PL_MAN, name: Manual Polyline, type: Polyline, units: ) to (Operation - name: Create Polyline Curve) with properties: 
+Relationship (CONTAINS) from (Group - name: Gas Components) to (Curve - source: Create_Multiple_Curve_Data.htm, mnemonic: C1, name: C1, type: User-defined, units: ppm) with properties: 
+Relationship (CONTAINS) from (Group - name: Gas Components) to (Curve - source: Create_Multiple_Curve_Data.htm, mnemonic: C2, name: C2, type: User-defined, units: ppm) with properties: 
+Relationship (CONTAINS) from (Group - name: Gas Components) to (Curve - source: Create_Multiple_Curve_Data.htm, mnemonic: C1, name: C1, type: User-defined, units: ppm) with properties: 
+Relationship (CONTAINS) from (Group - name: Gas Components) to (Curve - source: Create_Multiple_Curve_Data.htm, mnemonic: C2, name: C2, type: User-defined, units: ppm) with properties: 
+Relationship (CREATED_BY) from (Group - name: Gas Components) to (Operation - name: Create Multiple Curve Data) with properties: 
+Relationship (CREATED_BY) from (Group - name: Gas Components) to (Operation - name: Create Multiple Curve Data) with properties: 
+Relationship (VIEWED_BY) from (Group - name: Gas Components) to (Operation - name: View and Edit Curve Groups) with properties: 
+Relationship (VIEWED_BY) from (Group - name: Gas Components) to (Operation - name: View and Edit Curve Groups) with properties: 
