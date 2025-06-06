@@ -1,4 +1,8 @@
+from huggingface_hub import login
 import os
+
+login(token=os.getenv("HUGGINGFACEHUB_API_TOKEN"))
+
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -14,7 +18,7 @@ llm = ChatOllama(
     temperature=0
 )
 
-embedding_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+embedding_provider = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
 
 graph = Neo4jGraph(
     url=os.getenv('NEO4J_URI'),
@@ -23,10 +27,10 @@ graph = Neo4jGraph(
 )
 
 chunk_vector = Neo4jVector.from_existing_index(
-    embedding_model,
+    embedding_provider,
     graph=graph,
-    index_name="chunkVector",
-    embedding_node_property="textEmbedding",
+    index_name="Type",
+    embedding_node_property="embedding",
     text_node_property="text",
     retrieval_query="""
 // get the document
@@ -58,7 +62,7 @@ RETURN
 
 instructions = (
     "Use the given context to answer the question."
-    "Reply with an answer that includes the relevant information from the text."
+    "Reply with an answer that includes the id of the document and other relevant information from the text."
     "If you don't know the answer, say you don't know."
     "Context: {context}"
 )
@@ -76,3 +80,6 @@ chunk_retriever = create_retrieval_chain(
     chunk_retriever, 
     chunk_chain
 )
+
+def find_chunk(q):
+    return chunk_retriever.invoke({"input": q})
