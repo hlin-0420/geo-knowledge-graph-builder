@@ -1,13 +1,9 @@
 from .llm import llm
-from .graph import graph
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.prompts import PromptTemplate
 from langchain.schema import StrOutputParser
 from langchain.tools import Tool
-from langchain_neo4j import Neo4jChatMessageHistory
 from langchain.agents import AgentExecutor, create_react_agent
-from langchain_core.runnables.history import RunnableWithMessageHistory
-from .utils import get_session_id
 
 from .tools.vector import find_chunk
 from .tools.cypher import run_cypher
@@ -39,9 +35,6 @@ tools = [
         func = run_cypher,
     )
 ]
-
-def get_memory(session_id):
-    return Neo4jChatMessageHistory(session_id=session_id, graph=graph)
 
 agent_prompt = PromptTemplate.from_template("""
 You are a Neo4j, Knowledge graph, and generative AI expert.
@@ -75,9 +68,6 @@ Final Answer: [your response here]
 
 Begin!
 
-Previous conversation history:
-{chat_history}
-
 New input: {input}
 {agent_scratchpad}
 """)
@@ -90,21 +80,6 @@ agent_executor = AgentExecutor(
     verbose=True
     )
 
-chat_agent = RunnableWithMessageHistory(
-    agent_executor,
-    get_memory,
-    input_messages_key="input",
-    history_messages_key="chat_history",
-)
-
 def generate_response(user_input):
-    """
-    Create a handler that calls the Conversational agent
-    and returns a response to be rendered in the UI
-    """
-
-    response = chat_agent.invoke(
-        {"input": user_input},
-        {"configurable": {"session_id": get_session_id()}},)
-
+    response = agent_executor.invoke({"input": user_input})
     return response['output']
