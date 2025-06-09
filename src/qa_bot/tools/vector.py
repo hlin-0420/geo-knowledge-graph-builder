@@ -29,34 +29,18 @@ graph = Neo4jGraph(
 chunk_vector = Neo4jVector.from_existing_index(
     embedding_provider,
     graph=graph,
-    index_name="Type",
     embedding_node_property="embedding",
+    index_name="type_vector_index",
     text_node_property="text",
     retrieval_query="""
-// get the document
-MATCH (node)-[:PART_OF]->(d:Document)
-WITH node, score, d
-
-// get the entities and relationships for the document
-MATCH (node)-[:HAS_ENTITY]->(e)
-MATCH p = (e)-[r]-(e2)
-WHERE (node)-[:HAS_ENTITY]->(e2)
-
-// unwind the path, create a string of the entities and relationships
-UNWIND relationships(p) as rels
-WITH 
-    node, 
-    score, 
-    d, 
-    collect(apoc.text.join(
-        [labels(startNode(rels))[0], startNode(rels).id, type(rels), labels(endNode(rels))[0], endNode(rels).id]
-        ," ")) as kg
-RETURN
-    node.text as text, score,
-    { 
-        document: d.id,
-        entities: kg
-    } AS metadata
+// Get the Type node and its formats
+MATCH (t:Type)
+OPTIONAL MATCH (t)-[:HAS_FORMAT]->(f:Format)
+OPTIONAL MATCH (t)-[:HAS_ATTRIBUTE]->(attr)
+RETURN 
+  t.name AS type_name,
+  collect(DISTINCT f.name) AS formats,
+  collect(DISTINCT labels(attr)[0]) + collect(DISTINCT attr.name) AS attributes
 """
 )
 
