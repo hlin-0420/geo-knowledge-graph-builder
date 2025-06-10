@@ -24,25 +24,18 @@ class GraphVisualizer:
         seen_nodes = set()
         for record in results:
             # Add source node
-            src = record['n']
-            if src.id not in seen_nodes:
-                net.add_node(src.id, label=next(iter(src.labels)), title=str(src))
-                seen_nodes.add(src.id)
+            print(f"Record: {record}")
+            filtered_src = {k: record[k] for k in ['t', 'n'] if k in record}
+            print(f"Filtered node: {filtered_src}")
+            if 't' in filtered_src:
+                record_key = 't'
+            else:
+                record_key = 'n'
+                
             
-            # Add target node
-            tgt = record['m']
-            if tgt.id not in seen_nodes:
-                net.add_node(tgt.id, label=next(iter(tgt.labels)), title=str(tgt))
-                seen_nodes.add(tgt.id)
-            
-            # Add edge
-            rel = record['r']
-            net.add_edge(src.id, tgt.id, title=rel.type)
+            node_attributes = {k: v for k, v in record.items() if k != record_key}
+            net.add_node(record_key, **node_attributes)
         
-        # Customize visualization
-        net.toggle_physics(True)
-        net.show_buttons(filter_=['physics'])
-        net.show(output_file)
         return net
 
 def visualize_curve_types():
