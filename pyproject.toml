@@ -1,0 +1,7 @@
+[project]
+name = "geo_knowledge_graph"
+version = "0.1.0"
+
+[build-system]
+requires = ["setuptools>=42"]
+build-backend = "setuptools.build_meta"
