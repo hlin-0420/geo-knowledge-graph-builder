@@ -31,10 +31,8 @@ def run_cypher_file(filepath):
 
 def main():
     cypher_scripts = [
-        "cypher/schema/nodes.cypher",
-        "cypher/schema/relationships.cypher",
-        "cypher/data/curve_type.cypher",
-        "cypher/setup/02_create_vector_index.cypher",
+        "cypher/core/00_graph_setup.cypher",
+        "cypher/core/02_creating_settings.cypher",
     ]
 
     for script_path in cypher_scripts:

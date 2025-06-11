@@ -1,8 +1,14 @@
-MERGE (:System {name: 'GEO File System'});
+MERGE (geo:GEO {name:'GEO Help Guide'})
+MERGE (geoFileSystem:System {name: 'GEO File System'})
+MERGE (geo)-[:HAS_TOPIC]->(geoFileSystem);
 
-MERGE (:FileType {name: 'ODF', fullName: 'Output Database File'});
-MERGE (:FileType {name: 'ODT', fullName: 'Template File'});
-MERGE (:FileType {name: 'OIF', fullName: 'Interval File'});
+MERGE (geoFileSystem:System {name: 'GEO File System'})
+MERGE (odf:FileType {name: 'ODF', fullName: 'Output Database File'})
+MERGE (odt:FileType {name: 'ODT', fullName: 'Template File'})
+MERGE (oif:FileType {name: 'OIF', fullName: 'Interval File'})
+MERGE (geoFileSystem)-[:HAS_FILE_TYPE]->(odf)
+MERGE (geoFileSystem)-[:HAS_FILE_TYPE]->(odt)
+MERGE (geoFileSystem)-[:HAS_FILE_TYPE]->(oif);
 
 MERGE (:Component {name: 'Library Info', details: 'headers, lithology, modifiers, symbols'});
 MERGE (:Component {name: 'View File Content', details: 'track layout, depth, scale'});
