@@ -1,2 +1,11 @@
 neo4j
 python-dotenv
+faiss-cpu
+python-dotenv
+sentence-transformers
+neo4j
+langchain-ollama
+ipywidgets
+ipython
+pandas
+beautifulsoup4
