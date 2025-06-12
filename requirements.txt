@@ -1,11 +1,13 @@
 neo4j
+pyvis
 python-dotenv
 faiss-cpu
-python-dotenv
 sentence-transformers
-neo4j
 langchain-ollama
+langchain-community
 ipywidgets
 ipython
 pandas
 beautifulsoup4
+langchain_neo4j
+jinja2
