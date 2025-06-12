@@ -2,4 +2,3 @@ data_processing
 knowledge_graph
 qa_bot
 run_chat
-tests
