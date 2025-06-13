@@ -5,8 +5,8 @@ from langchain.schema import StrOutputParser
 from langchain.tools import Tool
 from langchain.agents import AgentExecutor, create_react_agent
 
-from .tools.vector import find_chunk
-from .tools.cypher import run_cypher
+from ..tools.vector import find_chunk
+from ..tools.cypher import run_cypher
 
 chat_prompt = ChatPromptTemplate.from_messages(
     [

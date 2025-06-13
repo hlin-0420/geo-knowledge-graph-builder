@@ -1,4 +1,4 @@
-from qa_bot.agent import generate_response
+from qa_bot.core.agent import generate_response
 
 def main():
     print("Welcome to the GEO Help Guide Chatbot!")

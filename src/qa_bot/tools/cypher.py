@@ -1,8 +1,8 @@
 from dotenv import load_dotenv
 load_dotenv()
 
-from ..llm import llm
-from ..graph import graph
+from ..core.llm import llm
+from ..core.graph import graph
 
 from langchain_neo4j import GraphCypherQAChain
 from langchain.prompts import PromptTemplate
