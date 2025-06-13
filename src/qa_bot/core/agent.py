@@ -20,28 +20,26 @@ kg_chat = chat_prompt | llm | StrOutputParser()
 # Tools list
 tools = [
     Tool.from_function(
-        name="General Chat",
-        description="For general knowledge graph chat not covered by other tools",
+        name="general_chat",
+        description="General queries about the knowledge graph",
         func=kg_chat.invoke,
     ), 
     Tool.from_function(
-        name="Lesson content search",
-        description="For when you need to find information in the lesson content",
+        name="lesson_content_search",
+        description="For retrieving lesson content",
         func=find_chunk, 
     ),
     Tool.from_function(
-        name="Knowledge Graph information",
-        description="For when you need to find information about the entities and relationship in the knowledge graph",
+        name="kg_info",
+        description="For retrieving entities and relationships from the knowledge graph",
         func = run_cypher,
     )
 ]
 
 agent_prompt = PromptTemplate.from_template("""
 You are a Neo4j, Knowledge graph, and generative AI expert.
-Be as helpful as possible and return as much information as possible.
-Only answer questions that relate to Neo4j, graphs, cypher, generative AI, or associated subjects.
-        
-Always use a tool and only use the information provided in the context.
+Be as helpful as possible using only the provided tools. 
+Only answer questions that relate to Neo4j, graphs, cypher, generative AI, or the GEO Help Guide.
 
 TOOLS:
 ------
@@ -54,12 +52,16 @@ To use a tool, please use the following format:
 
 ```
 Thought: Do I need to use a tool? Yes
-Action: the action to take, should be one of [{tool_names}]
-Action Input: the input to the action
-Observation: the result of the action
+Action: general_chat
+Action Input: What types of files are used for curve data?
+Observation: Curve data is usually stored in ODF, OIF, or ODT formats in the GEO system.
+
+Action: one of [{tool_names}]
+Action Input: <input to the tool>
+Observation: <tool result>
 ```
 
-When you have a response to say to the Human, or if you do not need to use a tool, you MUST use the format:
+When you have a response to say to the user, or do not need a tool, use the format:
 
 ```
 Thought: Do I need to use a tool? No
@@ -76,7 +78,7 @@ agent = create_react_agent(llm, tools, agent_prompt)
 agent_executor = AgentExecutor(
     agent=agent,
     tools=tools,
-    handle_parsing_errors=True,
+    handle_parsing_errors=False,
     verbose=True
     )
 
