@@ -32,6 +32,7 @@ def run_cypher_file(filepath):
 def main():
     cypher_scripts = [
         "cypher/core/00_graph_setup.cypher",
+        "cypher/core/01_create_vector_index.cypher",
         "cypher/core/02_creating_settings.cypher",
     ]
 
