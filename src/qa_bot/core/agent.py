@@ -66,11 +66,26 @@ def _kg_info(cypher: str) -> str:
         Serialised representation of the query result.
     """
 
-    results = run_cypher(cypher)
-    if isinstance(results, list) and results and isinstance(results[0], dict):
-        values = [v for row in results for v in row.values()]
-        return ", ".join(values)
-    return str(results)
+    out = run_cypher(cypher)
+    
+    print(out)
+
+    # 1) If GraphCypherQAChain gave us its usual dict, extract the answer or data list
+    if isinstance(out, dict):
+        if out.get("result"):                # natural-language answer already prepared
+            return out["result"]
+        if "context" in out and isinstance(out["context"], list):
+            # context is a list of dict rows – flatten it
+            vals = [v for row in out["context"] for v in row.values()]
+            return ", ".join(vals)
+
+    # 2) If we got a bare list of dicts
+    if isinstance(out, list) and out and isinstance(out[0], dict):
+        vals = [v for row in out for v in row.values()]
+        return ", ".join(vals)
+
+    # 3) Fallback – just stringify
+    return str(out)
 
 
 ###############################################################################
