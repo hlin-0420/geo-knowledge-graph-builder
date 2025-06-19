@@ -1,21 +1,34 @@
-"""kg_agent.py
-================
+"""
+kg_agent.py
+===========
 
-An augmented-language-model (LLM) agent that answers questions about Neo4j, the
-GEO Help Guide, graphs, Cypher, and generative AI by orchestrating three helper
-functions exposed as LangChain `Tool`s.
+A ReAct-style LangChain agent that answers questions about Neo4j, the
+GEO Help Guide, graphs, Cypher, and generative AI.
 
-The public entry-point is :pyfunc:`generate_response`, which routes the user's
-question through a ReAct-style agent that decides when (and how) to invoke the
-underlying tools.
+Key design goals
+----------------
+1. **Import-side-effect-free** – importing *this* module must not trigger any
+   network traffic or expensive initialisation.
+2. **One-RTT response** – the first call to :pyfunc:`generate_response`
+   constructs everything (graph handle, prompt, executor) exactly once,
+   then re-uses it for subsequent calls.
 
-This module is **import-side-effect-free**: importing it does not trigger any
-network calls or heavyweight operations. The LangChain agent and executor are
-instantiated eagerly so that a call to :pyfunc:`generate_response` is one RTT.
+External deps
+-------------
+* python-dotenv - for loading ``.env`` secrets.
+* langchain-community - for Neo4jGraph wrapper.
+
+Environment variables expected (via .env or the shell):
+
+* ``NEO4J_URI``       e.g. ``bolt://localhost:7687``
+* ``NEO4J_USERNAME``  e.g. ``neo4j``
+* ``NEO4J_PASSWORD``  e.g. ``s3cr3t``
+
 """
 from __future__ import annotations
 
 from typing import Any, Dict, List
+from functools import lru_cache
 
 from langchain.agents import AgentExecutor, create_react_agent
 from langchain.schema import StrOutputParser
@@ -25,10 +38,48 @@ from langchain_core.prompts import (
     HumanMessagePromptTemplate,
 )
 from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
+from langchain_neo4j.chains.graph_qa.cypher import GraphCypherQAChain
 
+# ── Local utilities ──────────────────────────────────────────────────────────
 from .llm import llm  # Local LLM wrapper
-from ..tools.cypher import run_cypher
-from ..tools.vector import find_chunk
+
+from dotenv import load_dotenv
+
+load_dotenv()
+
+import os
+
+from langchain_neo4j import Neo4jGraph
+
+graph = Neo4jGraph(
+    url=os.getenv("NEO4J_URI"),
+    username=os.getenv("NEO4J_USERNAME"),
+    password=os.getenv("NEO4J_PASSWORD"),
+)
+
+# ---------- helpers ---------------------------------------------------------
+@lru_cache(maxsize=1)
+def get_graph() -> Neo4jGraph:
+    """Return a singleton Neo4jGraph (constructed on first use)."""
+    return Neo4jGraph(
+        url=os.getenv("NEO4J_URI"),
+        username=os.getenv("NEO4J_USERNAME"),
+        password=os.getenv("NEO4J_PASSWORD"),
+    )
+
+def get_schema_string() -> str:
+    """Return a mini-DSL with *only* the labels & rel-types that exist now."""
+    graph = get_graph()
+
+    labels          = graph.query("CALL db.labels() YIELD label RETURN label")
+    rels            = graph.query("CALL db.relationshipTypes() YIELD relationshipType RETURN relationshipType")
+    properties      = graph.query("CALL db.propertyKeys() YIELD propertyKey RETURN propertyKey")
+
+    schema_lines = ["# === Live Neo4j Schema Snapshot ==="]
+    schema_lines += [f"LABEL: {row['label']}"               for row in labels]
+    schema_lines += [f"REL:   {row['relationshipType']}"    for row in rels]
+    schema_lines += [f"PROP:  {row['propertyKey']}"         for row in properties]
+    return "\n".join(schema_lines)
 
 ###############################################################################
 # Prompt & chain definitions                                                   #
@@ -52,40 +103,36 @@ kg_chat = chat_prompt | llm | StrOutputParser()
 # Tool adapter functions                                                      #
 ###############################################################################
 
-def _kg_info(cypher: str) -> str:
-    """Run a Cypher query against the knowledge graph and return the result.
+ALIASES = {
+    "curve settings": "CurveSettings",
+    "scales": "Scale",
+    "scale type": "scale_type",
+}
 
-    Parameters
-    ----------
-    cypher:
-        A **read-only** Cypher statement written by the agent.
+def resolve_aliases(question: str) -> str:
+    for k, v in ALIASES.items():
+        question = question.replace(k, v)
+    return question
 
-    Returns
-    -------
-    str
-        Serialised representation of the query result.
+def _kg_info(question: str) -> str:
     """
-
-    out = run_cypher(cypher)
+    Ask any natural-language question; the chain writes & executes Cypher.
+    """
+    question = resolve_aliases(question)
     
-    print(out)
+    result = graph_cypher_chain.invoke({"query": question})
 
-    # 1) If GraphCypherQAChain gave us its usual dict, extract the answer or data list
-    if isinstance(out, dict):
-        if out.get("result"):                # natural-language answer already prepared
-            return out["result"]
-        if "context" in out and isinstance(out["context"], list):
-            # context is a list of dict rows – flatten it
-            vals = [v for row in out["context"] for v in row.values()]
-            return ", ".join(vals)
+    # Preferred answer comes back in result['result']
+    if result.get("result"):
+        return result["result"]
 
-    # 2) If we got a bare list of dicts
-    if isinstance(out, list) and out and isinstance(out[0], dict):
-        vals = [v for row in out for v in row.values()]
-        return ", ".join(vals)
+    # Fallback: flatten row data if the chain produced only raw rows
+    ctx = result.get("context", [])
+    if ctx:
+        vals = [v for row in ctx for v in row.values()]
+        return ", ".join(map(str, vals))
 
-    # 3) Fallback – just stringify
-    return str(out)
+    return "I couldn't find that in the knowledge graph."
 
 
 ###############################################################################
@@ -106,6 +153,13 @@ tools: List[Tool] = [
 ###############################################################################
 # Agent definition                                                            #
 ###############################################################################
+graph_cypher_chain = GraphCypherQAChain.from_llm(
+    llm,
+    graph=get_graph(),
+    cypher_kwargs={"graph_schema": get_schema_string()},
+    verbose=True,         
+    allow_dangerous_requests=True,   # 👈 new
+)
 
 agent_prompt: PromptTemplate = PromptTemplate.from_template(
     """
