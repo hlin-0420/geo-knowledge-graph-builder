@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 llm = ChatOllama(
-    model="llama3.2:1b",
+    model="llama3.2:latest",
     temperature=0
 )
 

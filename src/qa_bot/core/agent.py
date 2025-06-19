@@ -114,26 +114,34 @@ def resolve_aliases(question: str) -> str:
         question = question.replace(k, v)
     return question
 
+def format_results(rows, *, limit=20):
+    """
+    Rows come back from Neo4j as a list of dict-like objects.
+    Turn the first `limit` rows into readable lines.
+    """
+    if not rows:
+        return "⟨no records⟩"
+
+    keys = rows[0].keys()            # keep column order stable
+    lines = []
+    for row in rows[:limit]:
+        parts = [f"{k}={row[k]}" for k in keys]
+        lines.append(", ".join(parts))
+
+    if len(rows) > limit:
+        lines.append(f"... {len(rows)-limit} more")
+
+    return "\n".join(lines)
+
 def _kg_info(question: str) -> str:
-    """
-    Ask any natural-language question; the chain writes & executes Cypher.
-    """
     question = resolve_aliases(question)
-    
-    result = graph_cypher_chain.invoke({"query": question})
-
-    # Preferred answer comes back in result['result']
-    if result.get("result"):
-        return result["result"]
-
-    # Fallback: flatten row data if the chain produced only raw rows
-    ctx = result.get("context", [])
-    if ctx:
-        vals = [v for row in ctx for v in row.values()]
-        return ", ".join(map(str, vals))
-
-    return "I couldn't find that in the knowledge graph."
-
+    if question.strip().lower().startswith("match"):
+        # direct Cypher execution
+        rows = get_graph().query(question)
+        return format_results(rows)
+    else:
+        # natural language -> LLM -> Cypher
+        return graph_cypher_chain.invoke({"query": question})
 
 ###############################################################################
 # Tool wiring                                                                 #
