@@ -164,7 +164,7 @@ tools: List[Tool] = [
 graph_cypher_chain = GraphCypherQAChain.from_llm(
     llm,
     graph=get_graph(),
-    cypher_kwargs={"graph_schema": get_schema_string()},
+    cypher_kwargs=get_schema_string(),
     verbose=True,         
     allow_dangerous_requests=True,   # 👈 new
 )
