@@ -3,6 +3,7 @@ from collections import defaultdict
 from pathlib import Path
 
 from ..qa_bot.core.kg_schema import schema_text
+import src.qa_bot.core.kg_schema as kg_schema
 
 RECORDS = Path(__file__).parent.parent / "tests" / "records.json"   # tests/records.json
 
@@ -39,7 +40,7 @@ def test_schema_text_from_dump(monkeypatch):
     dump_dict = _load_dump(RECORDS)
 
     # ② Patch the dependency so no live DB is required
-    monkeypatch.setattr(schema_text, "schema_dict", lambda: dump_dict)
+    monkeypatch.setattr(kg_schema, "schema_dict", lambda: dump_dict)
 
     # ③ Expected output: header + one line per (src,rel,dst), sorted
     header = "# === Valid Neo4j Schema ==="
@@ -53,4 +54,4 @@ def test_schema_text_from_dump(monkeypatch):
     expected_output = "\n".join(expected_lines)
 
     # ④ Act + Assert
-    assert schema_text.schema_text() == expected_output
+    assert kg_schema.schema_text() == expected_output
