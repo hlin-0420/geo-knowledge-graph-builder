@@ -2,260 +2,153 @@
 kg_agent.py
 ===========
 
-A ReAct-style LangChain agent that answers questions about Neo4j, the
-GEO Help Guide, graphs, Cypher, and generative AI.
-
-Key design goals
-----------------
-1. **Import-side-effect-free** – importing *this* module must not trigger any
-   network traffic or expensive initialisation.
-2. **One-RTT response** – the first call to :pyfunc:`generate_response`
-   constructs everything (graph handle, prompt, executor) exactly once,
-   then re-uses it for subsequent calls.
-
-External deps
--------------
-* python-dotenv - for loading ``.env`` secrets.
-* langchain-community - for Neo4jGraph wrapper.
-
-Environment variables expected (via .env or the shell):
-
-* ``NEO4J_URI``       e.g. ``bolt://localhost:7687``
-* ``NEO4J_USERNAME``  e.g. ``neo4j``
-* ``NEO4J_PASSWORD``  e.g. ``s3cr3t``
-
+ReAct-style LangChain agent that answers questions about the GEO Help Guide.
+Importing this module is **side-effect-free**; the Neo4j connection and agent
+are built lazily when generate_response() is called the first time.
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List
+import os
 from functools import lru_cache
-
-from langchain.agents import AgentExecutor, create_react_agent
-from langchain.schema import StrOutputParser
-from langchain.tools import Tool
-from langchain_core.prompts import (
-    SystemMessagePromptTemplate,
-    HumanMessagePromptTemplate,
-)
-from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
-from langchain_neo4j.chains.graph_qa.cypher import GraphCypherQAChain
-
-# ── Local utilities ──────────────────────────────────────────────────────────
-from .llm import llm  # Local LLM wrapper
+from typing import Any, Dict, List
 
 from dotenv import load_dotenv
 
-load_dotenv()
-
-import os
-
-from langchain_neo4j import Neo4jGraph
-
-graph = Neo4jGraph(
-    url=os.getenv("NEO4J_URI"),
-    username=os.getenv("NEO4J_USERNAME"),
-    password=os.getenv("NEO4J_PASSWORD"),
+from langchain.agents import AgentExecutor, create_react_agent
+from langchain.tools import Tool
+from langchain_core.prompts import PromptTemplate
+from langchain_core.prompts import (
+    ChatPromptTemplate,
+    SystemMessagePromptTemplate,
+    HumanMessagePromptTemplate,
 )
 
-# ---------- helpers ---------------------------------------------------------
+from langchain_neo4j import Neo4jGraph
+from langchain_neo4j.chains.graph_qa.cypher import GraphCypherQAChain
+
+from .llm import llm
+
+load_dotenv()                           # still safe at import time – just env
+
+# ────────────────────────── generic helpers ──────────────────────────────
+ALIASES = {"curve settings": "CurveSettings", "scales": "Scale", "scale type": "scale_type"}
+
+def resolve_aliases(q: str) -> str:
+    for k, v in ALIASES.items():
+        q = q.replace(k, v)
+    return q
+
+def format_results(rows, *, limit=20) -> str:
+    if not rows:
+        return "⟨no records⟩"
+    keys = rows[0].keys()
+    lines = [", ".join(f"{k}={row[k]}" for k in keys) for row in rows[:limit]]
+    if len(rows) > limit:
+        lines.append(f"... {len(rows)-limit} more")
+    return "\n".join(lines)
+
+# ───────────────────── lazy singletons (no side-effects) ─────────────────
 @lru_cache(maxsize=1)
-def get_graph() -> Neo4jGraph:
-    """Return a singleton Neo4jGraph (constructed on first use)."""
+def _graph() -> Neo4jGraph:
     return Neo4jGraph(
         url=os.getenv("NEO4J_URI"),
         username=os.getenv("NEO4J_USERNAME"),
         password=os.getenv("NEO4J_PASSWORD"),
     )
 
-def get_schema_string() -> str:
-    """Return a mini-DSL with *only* the labels & rel-types that exist now."""
-    graph = get_graph()
+@lru_cache(maxsize=1)
+def _graph_cypher_chain() -> GraphCypherQAChain:
+    return GraphCypherQAChain.from_llm(
+        llm,
+        graph=_graph(),
+        verbose=True,
+        validate_cypher=True,
+        allow_dangerous_requests=True,
+    )
 
-    labels          = graph.query("CALL db.labels() YIELD label RETURN label")
-    rels            = graph.query("CALL db.relationshipTypes() YIELD relationshipType RETURN relationshipType")
-    properties      = graph.query("CALL db.propertyKeys() YIELD propertyKey RETURN propertyKey")
+def _kg_info(question: str) -> str:
+    # Always let the chain translate NL → Cypher first
+    try:
+        return _graph_cypher_chain().invoke(
+            {
+                "question": question,
+                "schema": _graph().schema, # real schema text
+                "top_k": 10,
+            }
+        )
+    except Exception:
+        # If the *user* literally provided Cypher, fall back
+        if question.strip().lower().startswith("match"):
+            rows = _graph().query(question)
+            return format_results(rows)
+        raise
 
-    schema_lines = ["# === Live Neo4j Schema Snapshot ==="]
-    schema_lines += [f"LABEL: {row['label']}"               for row in labels]
-    schema_lines += [f"REL:   {row['relationshipType']}"    for row in rels]
-    schema_lines += [f"PROP:  {row['propertyKey']}"         for row in properties]
-    return "\n".join(schema_lines)
+# ───────────────────── prompt & agent construction ───────────────────────
+_system_instructions = """
+You are a helpful assistant specialised in Neo4j, knowledge graphs, Cypher,
+generative AI, and the GEO Help Guide.  Use tools when necessary.
+"""
 
-###############################################################################
-# Prompt & chain definitions                                                   #
-###############################################################################
-
-# Template for simple KG chat (no tool‑use reasoning required)
-chat_prompt: ChatPromptTemplate = ChatPromptTemplate.from_messages(
+chat_prompt = ChatPromptTemplate.from_messages(
     [
-        SystemMessagePromptTemplate.from_template(
-            "You are a chat bot providing information from the GEO Help Guide. "
-            "Answer as usefully and concisely as possible."
-        ),
+        SystemMessagePromptTemplate.from_template(_system_instructions),
         HumanMessagePromptTemplate.from_template("{input}"),
     ]
 )
 
-# Chain: prompt → LLM → string output (via StrOutputParser)
-kg_chat = chat_prompt | llm | StrOutputParser()
-
-###############################################################################
-# Tool adapter functions                                                      #
-###############################################################################
-
-ALIASES = {
-    "curve settings": "CurveSettings",
-    "scales": "Scale",
-    "scale type": "scale_type",
-}
-
-def resolve_aliases(question: str) -> str:
-    for k, v in ALIASES.items():
-        question = question.replace(k, v)
-    return question
-
-def format_results(rows, *, limit=20):
-    """
-    Rows come back from Neo4j as a list of dict-like objects.
-    Turn the first `limit` rows into readable lines.
-    """
-    if not rows:
-        return "⟨no records⟩"
-
-    keys = rows[0].keys()            # keep column order stable
-    lines = []
-    for row in rows[:limit]:
-        parts = [f"{k}={row[k]}" for k in keys]
-        lines.append(", ".join(parts))
-
-    if len(rows) > limit:
-        lines.append(f"... {len(rows)-limit} more")
-
-    return "\n".join(lines)
-
-def _kg_info(question: str) -> str:
-    question = resolve_aliases(question)
-    if question.strip().lower().startswith("match"):
-        # direct Cypher execution
-        rows = get_graph().query(question)
-        return format_results(rows)
-    else:
-        # natural language -> LLM -> Cypher
-        return graph_cypher_chain.invoke({"query": question})
-
-###############################################################################
-# Tool wiring                                                                 #
-###############################################################################
-
-# LangChain Tools exposed to the ReAct agent.
-# The agent decides *which* tool (if any) to call for a given thought.
-
 tools: List[Tool] = [
     Tool.from_function(
         name="kg_info",
-        description="Answer questions by querying the GEO Help Guide knowledge graph using Cypher.",
+        description="Query the GEO Help Guide Neo4j graph with Cypher.",
         func=_kg_info,
     )
 ]
 
-###############################################################################
-# Agent definition                                                            #
-###############################################################################
-graph_cypher_chain = GraphCypherQAChain.from_llm(
-    llm,
-    graph=get_graph(),
-    cypher_kwargs=get_schema_string(),
-    verbose=True,         
-    allow_dangerous_requests=True,   # 👈 new
-)
+_system_instructions = """
+You are a helpful assistant specialised in Neo4j, knowledge graphs, Cypher,
+generative AI, and the GEO Help Guide.  Use tools when necessary.
+"""
 
-agent_prompt: PromptTemplate = PromptTemplate.from_template(
-    """
-You are a helpful assistant specialised in Neo4j, knowledge graphs, Cypher queries, generative AI, and the GEO Help Guide.
-Always try to use the appropriate tool to provide accurate, relevant, and concise answers.
-Only answer questions that relate to Neo4j, graphs, cypher, generative AI, or the GEO Help Guide.
+agent_prompt: PromptTemplate = (
+    PromptTemplate.from_template(
+        """
+{system}
 
 TOOLS:
-------
-
-You have access to the following tools:
-
 {tools}
 
 (The only tool name available is: {tool_names})
 
-To use a tool, follow this two-step loop **exactly**:
+Use the tool when needed, following the ReAct format:
 
-```
 Thought: Do I need to use a tool? Yes
 Action: kg_info
-Action Input: <Cypher query>
-Observation: <tool result>
-
+Action Input: <Cypher>
+Observation: <results>
 Thought: Do I need to use a tool? No
-Final Answer: <answer to the user, based ONLY on the observations>
-```
-
-Once you give the Final Answer, you must not output any more thoughts or actions.
-
-EXAMPLES:
----------
-
-Example 1:
-Thought: Do I need to use a tool? Yes
-Action: kg_info
-Action Input: MATCH (a)-[r]->(b) WHERE a.name = "ODF" AND b.name = "ODT" RETURN type(r), a.name, b.name
-Observation: HAS_TEMPLATE, ODF, ODT
-Final Answer: ODF is related to ODT via the "HAS_TEMPLATE" relationship.
-
-Example 2:
-Thought: Do I need to use a tool? Yes
-Action: kg_info
-Action Input: MATCH (s:System)<-[:HAS_FILE_TYPE]-(f:FileType) RETURN f.name
-Observation: ODF, OIF, ODT
-Thought: Do I need to use a tool? No
-Final Answer: There are 3 types of GEO file system files: ODF, OIF, and ODT.
+Final Answer: <answer>
 
 Begin!
-
 New input: {input}
 {agent_scratchpad}
-"""
+""".strip()
+    )
+    # 👇 This line supplies {system} once and removes it from the
+    # required-at-runtime variables.
+    .partial(system=_system_instructions)
 )
 
-# Build a ReAct agent and its executor (synchronous‑only for simplicity).
-agent = create_react_agent(llm, tools, agent_prompt)
-agent_executor: AgentExecutor = AgentExecutor(
-    agent=agent,
-    tools=tools,
-    handle_parsing_errors=False,
-    verbose=True,
-)
+@lru_cache(maxsize=1)
+def _agent_executor() -> AgentExecutor:
+    agent = create_react_agent(llm, tools, agent_prompt)
+    return AgentExecutor(agent=agent, tools=tools, verbose=True)
 
-###############################################################################
-# Public API                                                                  #
-###############################################################################
-
+# ─────────────────────────── public API ───────────────────────────────────
 def generate_response(user_input: str) -> str:
-    """Generate a final answer for *user_input* using the configured agent.
-
-    This is the single entry-point consumed by external callers (e.g. a REST
-    endpoint or a UI). It hides all LangChain plumbing details.
-
-    Parameters
-    ----------
-    user_input:
-        The user's natural-language question.
-
-    Returns
-    -------
-    str
-        The agent's *Final Answer* (never intermediate scratchpad lines).
     """
+    The single entry-point exposed to the outside world.
+    """
+    result: Dict[str, Any] = _agent_executor().invoke({"input": user_input})
+    return result["output"]
 
-    response: Dict[str, Any] = agent_executor.invoke({"input": user_input})
-    return response["output"]
-
-__all__: List[str] = [
-    "generate_response",
-]
+__all__ = ["generate_response"]
