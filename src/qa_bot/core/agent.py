@@ -17,7 +17,6 @@ from dotenv import load_dotenv
 from langchain.agents import AgentExecutor, create_react_agent
 from langchain.tools import Tool
 from langchain_core.prompts import PromptTemplate
-from langchain.schema import StrOutputParser
 from langchain_core.prompts import (
     ChatPromptTemplate,
     SystemMessagePromptTemplate,
@@ -28,7 +27,6 @@ from langchain_neo4j import Neo4jGraph
 from langchain_neo4j.chains.graph_qa.cypher import GraphCypherQAChain
 
 from .llm import llm
-from .kg_schema import schema_text      # <── new import
 
 load_dotenv()                           # still safe at import time – just env
 
@@ -63,18 +61,27 @@ def _graph_cypher_chain() -> GraphCypherQAChain:
     return GraphCypherQAChain.from_llm(
         llm,
         graph=_graph(),
-        # <- the live schema in text form prevents LLM hallucinations
-        cypher_kwargs={"schema": schema_text()},
         verbose=True,
+        validate_cypher=True,
         allow_dangerous_requests=True,
     )
 
 def _kg_info(question: str) -> str:
-    q = resolve_aliases(question)
-    if q.strip().lower().startswith("match"):
-        rows = _graph().query(q)
-        return format_results(rows)
-    return _graph_cypher_chain().invoke({"query": q})
+    # Always let the chain translate NL → Cypher first
+    try:
+        return _graph_cypher_chain().invoke(
+            {
+                "question": question,
+                "schema": _graph().schema, # real schema text
+                "top_k": 10,
+            }
+        )
+    except Exception:
+        # If the *user* literally provided Cypher, fall back
+        if question.strip().lower().startswith("match"):
+            rows = _graph().query(question)
+            return format_results(rows)
+        raise
 
 # ───────────────────── prompt & agent construction ───────────────────────
 _system_instructions = """
