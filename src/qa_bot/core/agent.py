@@ -105,8 +105,20 @@ tools: List[Tool] = [
 ]
 
 _system_instructions = """
-You are a helpful assistant specialised in Neo4j, knowledge graphs, Cypher,
-generative AI, and the GEO Help Guide.  Use tools when necessary.
+You are a helpful assistant with expertise in Neo4j, knowledge graphs, Cypher queries,
+generative AI, and the GEO Help Guide.
+
+Your job is to answer user questions using the available knowledge graph tool (`kg_info`),
+which allows Cypher queries to be run on the GEO Neo4j database.
+
+Use this tool when the user's question requires querying or exploring nodes, relationships,
+properties, or structure in the graph.
+
+Always provide a clear, useful response to the user — either by summarising query results,
+explaining relationships, or answering specific questions.
+
+Avoid repeating the same query unless new information is required. When possible,
+derive a final answer from tool output.
 """
 
 agent_prompt: PromptTemplate = (
@@ -119,7 +131,7 @@ TOOLS:
 
 (The only tool name available is: {tool_names})
 
-Use the tool when needed, following the ReAct format:
+You should only use the kg_info tool once unless new or incomplete information is returned. After using a tool, you must either produce a final answer or explicitly justify another query:
 
 Thought: Do I need to use a tool? Yes
 Action: kg_info
@@ -141,7 +153,13 @@ New input: {input}
 @lru_cache(maxsize=1)
 def _agent_executor() -> AgentExecutor:
     agent = create_react_agent(llm, tools, agent_prompt)
-    return AgentExecutor(agent=agent, tools=tools, verbose=True)
+    return AgentExecutor(
+        agent=agent,
+        tools=tools,
+        verbose=True,
+        handle_parsing_errors=True,
+        max_iterations=3
+    )
 
 # ─────────────────────────── public API ───────────────────────────────────
 def generate_response(user_input: str) -> str:
@@ -149,6 +167,7 @@ def generate_response(user_input: str) -> str:
     The single entry-point exposed to the outside world.
     """
     result: Dict[str, Any] = _agent_executor().invoke({"input": user_input})
+    print(f"Logged result: {result["output"]}")
     return result["output"]
 
 __all__ = ["generate_response"]
