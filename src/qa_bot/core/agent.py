@@ -68,7 +68,7 @@ def _graph_cypher_chain() -> GraphCypherQAChain:
 
 def _kg_info(question: str) -> str:
     try:
-        response = _graph_cypher_chain().invoke({"question": question})
+        response = _graph_cypher_chain().invoke({"query": question})
         return response["result"]
     except Exception:
         # fallback for raw Cypher input
