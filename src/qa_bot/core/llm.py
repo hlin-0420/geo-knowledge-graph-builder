@@ -1,11 +1,12 @@
-from langchain_ollama import ChatOllama
-from langchain_huggingface import HuggingFaceEmbeddings
+# llm.py
+from langchain_openai import ChatOpenAI
+import os
 from dotenv import load_dotenv
+
 load_dotenv()
 
-llm = ChatOllama(
-    model="llama2:7b-chat",
-    temperature=0
+llm = ChatOpenAI(
+    model_name="gpt-3.5-turbo",  # or "gpt-4"
+    temperature=0.2,
+    api_key=os.getenv("OPENAI_API_KEY"),
 )
-
-embedding_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")

@@ -67,17 +67,11 @@ def _graph_cypher_chain() -> GraphCypherQAChain:
     )
 
 def _kg_info(question: str) -> str:
-    # Always let the chain translate NL → Cypher first
     try:
-        return _graph_cypher_chain().invoke(
-            {
-                "question": question,
-                "schema": _graph().schema, # real schema text
-                "top_k": 10,
-            }
-        )
+        response = _graph_cypher_chain().invoke({"question": question})
+        return response["result"]
     except Exception:
-        # If the *user* literally provided Cypher, fall back
+        # fallback for raw Cypher input
         if question.strip().lower().startswith("match"):
             rows = _graph().query(question)
             return format_results(rows)
